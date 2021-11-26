@@ -1,5 +1,5 @@
 use std::env;
-use std::{fs::File, path::PathBuf};
+use std::fs::File;
 
 use reqwest::blocking::Client;
 use reqwest::header::HeaderValue;
@@ -206,14 +206,14 @@ struct ApiConfig {
 }
 
 fn main() {
-    let mut path =
-        PathBuf::from("/home/grayshade/.mozilla/firefox/9pbspxtt.default/sessionstore-backups");
-    path.push("recovery.jsonlz4");
+    let mut path = dirs::home_dir().expect("cannot find HOME directory");
+    path.push(".mozilla/firefox");
+    path.push("9pbspxtt.default");
+    path.push("sessionstore-backups/recovery.jsonlz4");
 
     let file = File::open(&path).unwrap();
     let mmap = unsafe { memmap2::MmapOptions::new().map(&file).unwrap() };
     let buf = lz4_flex::decompress_size_prepended(&mmap[8..]).unwrap();
-    // fs::write("recovery.json", &buf);
 
     let val: SessionStore = serde_json::from_slice(&buf).unwrap();
 
