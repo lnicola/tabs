@@ -1,8 +1,11 @@
+use std::cmp::Reverse;
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 
 use reqwest::blocking::Client;
 use reqwest::header::HeaderValue;
+use reqwest::Url;
 use serde::de::{self, IgnoredAny, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::fmt::{self, Formatter};
@@ -10,7 +13,7 @@ use std::marker::PhantomData;
 use time::OffsetDateTime;
 
 struct Entry {
-    _url: String,
+    url: String,
 }
 
 impl<'de> Deserialize<'de> for Entry {
@@ -43,7 +46,7 @@ impl<'de> Deserialize<'de> for Entry {
                     }
                 }
                 let url = url.ok_or_else(|| de::Error::missing_field("url"))?;
-                Ok(Entry { _url: url })
+                Ok(Entry { url })
             }
         }
         Deserializer::deserialize_struct(
@@ -218,13 +221,22 @@ fn main() {
     let val: SessionStore = serde_json::from_slice(&buf).unwrap();
 
     let mut count = 0i16;
+    let mut domains = HashMap::<String, u32>::new();
     for tab in &val.windows[0].tabs {
         if !tab.entries.is_empty() {
-            // println!("{}", tab.entries[tab.entries.len() - 1].url);
+            let _url = &tab.entries[tab.entries.len() - 1].url;
+            let url = Url::parse(&_url).unwrap();
+            if let Some(host) = url.host_str() {
+                *domains.entry(host.to_string()).or_default() += 1;
+            }
             count += 1;
         }
     }
-
+    let mut domains = domains.into_iter().collect::<Vec<_>>();
+    domains.sort_unstable_by_key(|p| Reverse(p.1));
+    for (domain, count) in domains.into_iter().take(10) {
+        println!("{} {}", domain, count);
+    }
     let api_url = env::var("API_URL").unwrap();
     let access_token = env::var("ACCESS_TOKEN").unwrap();
 
