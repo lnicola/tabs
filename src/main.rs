@@ -232,6 +232,7 @@ fn main() {
             count += 1;
         }
     }
+    println!("{count} tabs");
     let mut domains = domains.into_iter().collect::<Vec<_>>();
     domains.sort_unstable_by_key(|p| Reverse(p.1));
     for (domain, count) in domains.into_iter().take(10) {
