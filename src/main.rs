@@ -6,201 +6,27 @@ use std::fs::File;
 use reqwest::blocking::Client;
 use reqwest::header::HeaderValue;
 use reqwest::Url;
-use serde::de::{self, IgnoredAny, MapAccess, Visitor};
-use serde::{Deserialize, Deserializer};
-use std::fmt::{self, Formatter};
-use std::marker::PhantomData;
+use serde::Deserialize;
 use time::OffsetDateTime;
 
+#[derive(Deserialize)]
 struct Entry {
     url: String,
 }
 
-impl<'de> Deserialize<'de> for Entry {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct EntryVisitor<'de> {
-            lifetime: PhantomData<&'de ()>,
-        }
-        impl<'de> Visitor<'de> for EntryVisitor<'de> {
-            type Value = Entry;
-            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("struct Entry")
-            }
-            #[inline]
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: MapAccess<'de>,
-            {
-                let mut url = None;
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "url" => {
-                            url = Some(map.next_value()?);
-                        }
-                        _ => {
-                            map.next_value::<IgnoredAny>()?;
-                        }
-                    }
-                }
-                let url = url.ok_or_else(|| de::Error::missing_field("url"))?;
-                Ok(Entry { url })
-            }
-        }
-        Deserializer::deserialize_struct(
-            deserializer,
-            "Entry",
-            &["url"],
-            EntryVisitor {
-                lifetime: PhantomData,
-            },
-        )
-    }
-}
-
+#[derive(Deserialize)]
 struct Tab {
     entries: Vec<Entry>,
 }
 
-impl<'de> Deserialize<'de> for Tab {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct TabVisitor<'de> {
-            lifetime: PhantomData<&'de ()>,
-        }
-        impl<'de> Visitor<'de> for TabVisitor<'de> {
-            type Value = Tab;
-            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("struct Tab")
-            }
-            #[inline]
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: MapAccess<'de>,
-            {
-                let mut entries = None;
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "entries" => {
-                            entries = Some(map.next_value()?);
-                        }
-                        _ => {
-                            map.next_value::<IgnoredAny>()?;
-                        }
-                    }
-                }
-                let entries = entries.ok_or_else(|| de::Error::missing_field("entries"))?;
-                Ok(Tab { entries })
-            }
-        }
-        Deserializer::deserialize_struct(
-            deserializer,
-            "Tab",
-            &["entries"],
-            TabVisitor {
-                lifetime: PhantomData,
-            },
-        )
-    }
-}
-
+#[derive(Deserialize)]
 struct Window {
     tabs: Vec<Tab>,
 }
 
-impl<'de> Deserialize<'de> for Window {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct WindowVisitor<'de> {
-            lifetime: PhantomData<&'de ()>,
-        }
-        impl<'de> Visitor<'de> for WindowVisitor<'de> {
-            type Value = Window;
-            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("struct Window")
-            }
-            #[inline]
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: MapAccess<'de>,
-            {
-                let mut tabs = None;
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "tabs" => {
-                            tabs = Some(map.next_value()?);
-                        }
-                        _ => {
-                            map.next_value::<IgnoredAny>()?;
-                        }
-                    }
-                }
-                let tabs = tabs.ok_or_else(|| de::Error::missing_field("tabs"))?;
-                Ok(Window { tabs })
-            }
-        }
-        Deserializer::deserialize_struct(
-            deserializer,
-            "Window",
-            &["tabs"],
-            WindowVisitor {
-                lifetime: PhantomData,
-            },
-        )
-    }
-}
-
+#[derive(Deserialize)]
 struct SessionStore {
     windows: Vec<Window>,
-}
-impl<'de> Deserialize<'de> for SessionStore {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct SessionStoreVisitor<'de> {
-            lifetime: PhantomData<&'de ()>,
-        }
-        impl<'de> Visitor<'de> for SessionStoreVisitor<'de> {
-            type Value = SessionStore;
-            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-                formatter.write_str("struct SessionStore")
-            }
-            #[inline]
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: MapAccess<'de>,
-            {
-                let mut windows = None;
-                while let Some(key) = map.next_key()? {
-                    match key {
-                        "windows" => {
-                            windows = Some(map.next_value()?);
-                        }
-                        _ => {
-                            map.next_value::<IgnoredAny>()?;
-                        }
-                    }
-                }
-                let windows = windows.ok_or_else(|| de::Error::missing_field("windows"))?;
-                Ok(SessionStore { windows })
-            }
-        }
-        Deserializer::deserialize_struct(
-            deserializer,
-            "SessionStore",
-            &["windows"],
-            SessionStoreVisitor {
-                lifetime: PhantomData,
-            },
-        )
-    }
 }
 
 struct ApiConfig {
