@@ -47,22 +47,30 @@ fn main() {
     let val: SessionStore = serde_json::from_slice(&buf).unwrap();
 
     let mut count = 0i16;
-    let mut domains = HashMap::<String, u32>::new();
+    let mut domains = HashMap::<_, u32>::new();
+    let mut urls = HashMap::<_, u32>::new();
     for tab in &val.windows[0].tabs {
         if !tab.entries.is_empty() {
             let _url = &tab.entries[tab.entries.len() - 1].url;
             let url = Url::parse(&_url).unwrap();
             if let Some(host) = url.host_str() {
                 *domains.entry(host.to_string()).or_default() += 1;
+                *urls.entry(url.to_string()).or_default() += 1;
             }
             count += 1;
         }
     }
+
     println!("{count} tabs");
     let mut domains = domains.into_iter().collect::<Vec<_>>();
     domains.sort_unstable_by_key(|p| Reverse(p.1));
     for (domain, count) in domains.into_iter().take(10) {
         println!("{} {}", domain, count);
+    }
+    for (url, count) in urls.into_iter() {
+        if count > 1 {
+            println!("{} {}", url, count);
+        }
     }
     let api_url = env::var("API_URL").unwrap();
     let access_token = env::var("ACCESS_TOKEN").unwrap();
